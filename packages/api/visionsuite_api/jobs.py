@@ -17,20 +17,27 @@ class JobManager:
         self.backend = backend or LocalBackend()
         self._jobs: dict[str, Job] = {}
         self._lock = asyncio.Lock()
+        self._tasks: set[asyncio.Task] = set()
 
     async def submit(self, spec: RunSpec) -> Job:
         job = Job(spec)
         self._jobs[spec.run_id] = job
-        asyncio.create_task(self._run(job))
+        task = asyncio.create_task(self._run(job))
+        self._tasks.add(task)  # retain reference so the task isn't GC'd mid-flight
+        task.add_done_callback(self._tasks.discard)
         return job
 
     async def _run(self, job: Job) -> None:
         async with self._lock:  # one run at a time
             job.status = RunStatus.RUNNING
-            async for event in self.backend.stream(job.spec):
-                job.events.append(event)
-                if event.status is not None:
-                    job.status = event.status
+            try:
+                async for event in self.backend.stream(job.spec):
+                    job.events.append(event)
+                    if event.status is not None:
+                        job.status = event.status
+            except Exception as exc:
+                job.events.append(RunEvent(type="log", message=f"run failed: {exc}"))
+                job.status = RunStatus.FAILED
 
     def get(self, run_id: str) -> Job | None:
         return self._jobs.get(run_id)

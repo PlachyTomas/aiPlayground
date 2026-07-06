@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRun, runEventsUrl } from "../lib/api";
 
 interface Line {
@@ -10,6 +10,8 @@ export default function Dashboard() {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("idle");
   const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => () => wsRef.current?.close(), []);
 
   async function start() {
     setLogs([]);

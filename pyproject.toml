@@ -4,3 +4,4 @@ members = ["packages/core", "packages/api"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["packages"]
+filterwarnings = ["ignore::starlette.exceptions.StarletteDeprecationWarning"]

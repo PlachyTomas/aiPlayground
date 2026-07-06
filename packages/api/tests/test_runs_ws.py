@@ -1,7 +1,17 @@
+import pytest
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from visionsuite_api.db import make_engine
 from visionsuite_api.main import create_app
+
+
+def test_run_events_unknown_run_closes_4404():
+    client = TestClient(create_app(engine=make_engine("sqlite://")))
+    with pytest.raises(WebSocketDisconnect) as exc_info:
+        with client.websocket_connect("/api/runs/does-not-exist/events") as ws:
+            ws.receive_json()
+    assert exc_info.value.code == 4404
 
 
 def test_run_events_stream_to_done():

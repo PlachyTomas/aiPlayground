@@ -3,6 +3,8 @@ from pathlib import Path
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Field, SQLModel, create_engine
 
+from visionsuite_core.workspace import workspace_root
+
 
 class Project(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -35,7 +37,9 @@ class Model(SQLModel, table=True):
     path: str
 
 
-def make_engine(url: str = "sqlite:///./workspace/db.sqlite"):
+def make_engine(url: str | None = None):
+    if url is None:
+        url = f"sqlite:///{workspace_root() / 'db.sqlite'}"
     kwargs = {"connect_args": {"check_same_thread": False}}
     if url.startswith("sqlite:///") and ":memory:" not in url:
         Path(url.removeprefix("sqlite:///")).parent.mkdir(parents=True, exist_ok=True)
