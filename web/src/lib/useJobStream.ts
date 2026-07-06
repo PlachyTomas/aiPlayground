@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiUrl } from "./api";
 
 export function useJobStream() {
@@ -7,10 +7,13 @@ export function useJobStream() {
   const [status, setStatus] = useState("idle");
   const wsRef = useRef<WebSocket | null>(null);
 
+  useEffect(() => () => wsRef.current?.close(), []);
+
   function watch(jobId: string) {
     setLogs([]); setProgress(0); setStatus("running");
     const base = apiUrl(`/api/jobs/${jobId}/events`);
     const url = (base.startsWith("http") ? base : window.location.origin + base).replace(/^http/, "ws");
+    wsRef.current?.close();
     const ws = new WebSocket(url);
     wsRef.current = ws;
     ws.onmessage = (e) => {

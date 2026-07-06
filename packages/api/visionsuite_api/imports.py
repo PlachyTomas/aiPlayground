@@ -1,3 +1,4 @@
+import os
 import tempfile
 from pathlib import Path
 from pathlib import Path as _Path
@@ -67,17 +68,21 @@ async def hf_producer(engine, ds_id, dataset_id, split, config, image_column, li
 
 
 async def video_producer(engine, ds_id, video_path, every_n):
-    yield RunEvent(type="status", status=RunStatus.RUNNING)
-    n = 0
-    for data in extract_video_frames(_Path(video_path), every_n=every_n):
-        save_and_record(engine, ds_id, data, source="video")
-        n += 1
-        yield RunEvent(type="progress", message=f"{n} frames")
-    yield RunEvent(type="log", message=f"extracted {n} frames")
-    yield RunEvent(type="status", status=RunStatus.DONE)
+    try:
+        yield RunEvent(type="status", status=RunStatus.RUNNING)
+        n = 0
+        for data in extract_video_frames(_Path(video_path), every_n=every_n):
+            save_and_record(engine, ds_id, data, source="video")
+            n += 1
+            yield RunEvent(type="progress", message=f"{n} frames")
+        yield RunEvent(type="log", message=f"extracted {n} frames")
+        yield RunEvent(type="status", status=RunStatus.DONE)
+    finally:
+        _Path(video_path).unlink(missing_ok=True)
 
 
 def save_upload_tempfile(data: bytes, suffix: str) -> str:
     fd, path = tempfile.mkstemp(suffix=suffix)
+    os.close(fd)
     _Path(path).write_bytes(data)
     return path

@@ -2,6 +2,8 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useJobStream } from "./useJobStream";
 
+const closeSpy = vi.fn();
+
 class FakeWS {
   onmessage: ((e: { data: string }) => void) | null = null;
   onclose: (() => void) | null = null;
@@ -12,7 +14,7 @@ class FakeWS {
       this.onclose?.();
     }, 0);
   }
-  close() {}
+  close() { closeSpy(); }
 }
 
 afterEach(() => vi.restoreAllMocks());
@@ -24,5 +26,14 @@ describe("useJobStream", () => {
     act(() => result.current.watch("j1"));
     await waitFor(() => expect(result.current.status).toBe("done"));
     expect(result.current.progress).toBe(1);
+  });
+
+  it("closes the socket on unmount", async () => {
+    vi.stubGlobal("WebSocket", FakeWS as unknown as typeof WebSocket);
+    closeSpy.mockClear();
+    const { result, unmount } = renderHook(() => useJobStream());
+    act(() => result.current.watch("j1"));
+    unmount();
+    expect(closeSpy).toHaveBeenCalled();
   });
 });
