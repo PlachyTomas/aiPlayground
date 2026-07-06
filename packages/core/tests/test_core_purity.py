@@ -9,7 +9,7 @@ def test_core_imports_no_web_framework():
         "import visionsuite_core\n"
         "for mod in pkgutil.walk_packages(visionsuite_core.__path__, 'visionsuite_core.'):\n"
         "    importlib.import_module(mod.name)\n"
-        "forbidden = {'fastapi', 'starlette', 'uvicorn'}\n"
+        "forbidden = {'fastapi', 'starlette', 'uvicorn', 'label_studio_sdk'}\n"
         "loaded = sorted(forbidden & sys.modules.keys())\n"
         "assert not loaded, loaded\n"
     )

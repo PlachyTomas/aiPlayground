@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request
+from fastapi.concurrency import run_in_threadpool
 
 from ..labelstudio import get_gateway
 
@@ -7,7 +8,7 @@ router = APIRouter()
 
 @router.get("/api/labelstudio/status")
 async def labelstudio_status(request: Request) -> dict:
-    return get_gateway(request).status()
+    return await run_in_threadpool(get_gateway(request).status)
 
 
 import json
@@ -35,10 +36,11 @@ async def create_labeling_project(request: Request, ds_id: int, body: CreateLabe
         task = ds.task
     gateway = get_gateway(request)
     config = ls_config_for(task, body.class_names)
-    project_id = gateway.create_project(f"visionsuite-{ds_id}", config)
+    project_id = await run_in_threadpool(gateway.create_project, f"visionsuite-{ds_id}", config)
     images_dir = workspace.dataset_dir(str(ds_id)) / "images"
     images_dir.mkdir(parents=True, exist_ok=True)
-    gateway.connect_local_storage(project_id, str(images_dir), r".*\.(jpg|jpeg|png|webp|bmp)$")
+    await run_in_threadpool(
+        gateway.connect_local_storage, project_id, str(images_dir), r".*\.(jpg|jpeg|png|webp|bmp)$")
     with Session(request.app.state.engine) as s:
         ds = s.get(Dataset, ds_id)
         ds.ls_project_id = project_id
@@ -65,7 +67,7 @@ async def labeling_status(request: Request, ds_id: int) -> dict:
     if pid is None:
         return {"configured": False}
     gateway = get_gateway(request)
-    stats = gateway.project_stats(pid)
+    stats = await run_in_threadpool(gateway.project_stats, pid)
     return {"configured": True, "ls_project_id": pid, "total": stats["total"],
             "annotated": stats["annotated"], "ls_url": f"{gateway.url}/projects/{pid}/data"}
 
@@ -78,7 +80,7 @@ def _pull_producer(engine, ds_id, gateway):
             pid = ds.ls_project_id
             class_names = json.loads(ds.class_names)
         yield RunEvent(type="log", message=f"exporting project {pid}")
-        tasks = gateway.export_json(pid)
+        tasks = await run_in_threadpool(gateway.export_json, pid)
         coco = ls_json_to_coco(tasks, class_names)
         with Session(engine) as s:
             for old in s.exec(select(Annotation).where(Annotation.dataset_id == ds_id)).all():

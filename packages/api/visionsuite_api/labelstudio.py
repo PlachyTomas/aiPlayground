@@ -1,4 +1,6 @@
+import json
 import os
+import time
 
 
 class LabelStudioGateway:
@@ -37,12 +39,17 @@ class LabelStudioGateway:
     def export_json(self, project_id: int) -> list:
         sdk = self._sdk()
         ex = sdk.projects.exports.create(id=project_id)
-        while True:
+        for _ in range(120):
             got = sdk.projects.exports.get(id=project_id, export_pk=ex.id)
-            if getattr(got, "status", "") == "completed":
+            status = getattr(got, "status", "")
+            if status == "completed":
                 break
+            if status in {"failed", "error"}:
+                raise RuntimeError(f"Label Studio export failed with status {status!r}")
+            time.sleep(0.5)
+        else:
+            raise TimeoutError("Label Studio export did not complete in time")
         chunks = sdk.projects.exports.download(id=project_id, export_pk=ex.id, export_type="JSON")
-        import json
         return json.loads(b"".join(chunks))
 
 

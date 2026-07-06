@@ -44,14 +44,16 @@ def test_status_reports_stats(tmp_path, monkeypatch):
 
 def test_pull_stores_annotations(tmp_path, monkeypatch):
     client, ds_id = _seeded_client(tmp_path, monkeypatch)
-    job_id = client.post(f"/api/datasets/{ds_id}/labeling/pull").json()["job_id"]
-    for _ in range(300):
-        job = client.app.state.manager.get(job_id)
-        if job and job.status.value in ("done", "failed"):
-            break
-        time.sleep(0.01)
-    assert job.status.value == "done"
-    with Session(client.app.state.engine) as s:
-        rows = s.exec(select(Annotation)).all()
+    # Keep the client's event loop alive so the background pull's threadpool export can resolve.
+    with client:
+        job_id = client.post(f"/api/datasets/{ds_id}/labeling/pull").json()["job_id"]
+        for _ in range(300):
+            job = client.app.state.manager.get(job_id)
+            if job and job.status.value in ("done", "failed"):
+                break
+            time.sleep(0.01)
+        assert job.status.value == "done"
+        with Session(client.app.state.engine) as s:
+            rows = s.exec(select(Annotation)).all()
     assert len(rows) == 1 and rows[0].image_id == "img1" and rows[0].n_objects == 1
     assert json.loads(rows[0].coco_json)[0]["category_id"] == 0
