@@ -1,0 +1,40 @@
+from sqlmodel import Field, SQLModel, create_engine
+
+
+class Project(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+
+
+class Dataset(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    task: str
+    project_id: int | None = Field(default=None, foreign_key="project.id")
+
+
+class Image(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    dataset_id: int = Field(foreign_key="dataset.id")
+    path: str
+
+
+class Run(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    model_id: str
+    dataset_id: str
+    status: str = "pending"
+
+
+class Model(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    run_id: str = Field(foreign_key="run.id")
+    path: str
+
+
+def make_engine(url: str = "sqlite:///./workspace/db.sqlite"):
+    return create_engine(url, connect_args={"check_same_thread": False})
+
+
+def init_db(engine) -> None:
+    SQLModel.metadata.create_all(engine)
