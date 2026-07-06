@@ -1,4 +1,3 @@
-import asyncio
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request, WebSocket
@@ -8,7 +7,7 @@ from sqlmodel import Session
 from visionsuite_core.backends import RunSpec
 
 from ..db import Run
-from ..jobs import TERMINAL
+from .jobs import stream_job_events
 
 router = APIRouter()
 
@@ -40,25 +39,4 @@ def get_run(request: Request, run_id: str) -> dict:
 
 @router.websocket("/api/runs/{run_id}/events")
 async def run_events(websocket: WebSocket, run_id: str) -> None:
-    await websocket.accept()
-    job = websocket.app.state.manager.get(run_id)
-    if job is None:
-        await websocket.close(code=4404)
-        return
-    sent = 0
-    while True:
-        while sent < len(job.events):
-            event = job.events[sent]
-            sent += 1
-            await websocket.send_json(
-                {
-                    "type": event.type,
-                    "message": event.message,
-                    "progress": event.progress,
-                    "status": event.status.value if event.status else None,
-                }
-            )
-        if job.status in TERMINAL:
-            break
-        await asyncio.sleep(0.05)
-    await websocket.close()
+    await stream_job_events(websocket, websocket.app.state.manager.get(run_id))
