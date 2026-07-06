@@ -13,14 +13,16 @@ We are in **brainstorming → spec** (Superpowers flow). Currently at the **user
 - [x] Decomposition approved (5 sub-projects)
 - [x] Sub-project 0 (foundation) scope approved
 - [x] De-risking research sweep done + persisted
-- [x] Master spec written
-- [ ] **← USER REVIEWING SPEC (current gate)**
-- [ ] `writing-plans` → Sub-project 0 implementation plan
-- [ ] Build Sub-project 0 (solo)
+- [x] Master spec written + user-approved
+- [x] Git repo initialized (commit 594d22c on `main`)
+- [x] Sub-project 0 implementation plan written
+- [ ] **← EXECUTE Sub-project 0 (current step; branch `feat/subproject-0-foundation`)**
+- [ ] Brainstorm Sub-project 1 (data pipeline)
 
 ## Key documents
 - **Design spec:** `docs/superpowers/specs/2026-07-06-visionsuite-design.md` (architecture, scope, validated constraints, decomposition, Sub-project 0 detail).
 - **Research brief:** `docs/superpowers/research/2026-07-06-derisk-brief.md` (the expensive 361k-token artifact — MPS/Label Studio/Trackio/model-import/export findings, verified repo IDs, version pins).
+- **Sub-project 0 plan:** `docs/superpowers/plans/2026-07-06-subproject-0-foundation.md` (10 TDD tasks, walking skeleton; ML deps deliberately NOT installed until Sub-project 3).
 
 ## Locked decisions
 Vision-only v1 = **object detection + image classification**, end-to-end. Single-user, no auth. On-device MPS training behind a swappable `TrainingBackend` (cloud later, not v1). Annotation = Label Studio (local process, SDK). Tracking = Trackio (local). Model registry = curated MPS-safe shortlist **+ paste-any-HF-model** with a compatibility verdict. Export = HF native + ONNX (classification clean, detection best-effort); Core ML deferred. In-app inference = still images only (no live camera in v1).
