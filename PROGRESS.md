@@ -16,13 +16,15 @@ We are in **brainstorming → spec** (Superpowers flow). Currently at the **user
 - [x] Master spec written + user-approved
 - [x] Git repo initialized (commit 594d22c on `main`)
 - [x] Sub-project 0 implementation plan written
-- [x] Sub-project 0 BUILT on `feat/subproject-0-foundation` (10 tasks, TDD; 24 backend + 3 frontend tests green; whole-branch review passed + fixes applied)
-- [ ] **← Finish Sub-project 0 branch (merge/PR), then brainstorm Sub-project 1 (data pipeline)**
+- [x] Sub-project 0 BUILT + merged to `main` (10 tasks, TDD; 24 backend + 3 frontend tests green; whole-branch review passed + fixes applied)
+- [x] Sub-project 1 (data pipeline) spec + plan written (authored by Claude at user delegation — no interview)
+- [ ] **← EXECUTE Sub-project 1 on `feat/subproject-1-data` (10 tasks, subagent-driven Opus)**
 
 ## Key documents
 - **Design spec:** `docs/superpowers/specs/2026-07-06-visionsuite-design.md` (architecture, scope, validated constraints, decomposition, Sub-project 0 detail).
 - **Research brief:** `docs/superpowers/research/2026-07-06-derisk-brief.md` (the expensive 361k-token artifact — MPS/Label Studio/Trackio/model-import/export findings, verified repo IDs, version pins).
 - **Sub-project 0 plan:** `docs/superpowers/plans/2026-07-06-subproject-0-foundation.md` (10 TDD tasks, walking skeleton; ML deps deliberately NOT installed until Sub-project 3).
+- **Sub-project 1 spec + plan:** `docs/superpowers/specs/2026-07-06-subproject-1-data-design.md` + `docs/superpowers/plans/2026-07-06-subproject-1-data.md` (10 TDD tasks: core ingest, generalized jobs, dataset CRUD, 4 import sources, Datasets UI; adds pillow/datasets/imageio/python-multipart — NOT the ML stack).
 
 ## Locked decisions
 Vision-only v1 = **object detection + image classification**, end-to-end. Single-user, no auth. On-device MPS training behind a swappable `TrainingBackend` (cloud later, not v1). Annotation = Label Studio (local process, SDK). Tracking = Trackio (local). Model registry = curated MPS-safe shortlist **+ paste-any-HF-model** with a compatibility verdict. Export = HF native + ONNX (classification clean, detection best-effort); Core ML deferred. In-app inference = still images only (no live camera in v1).
