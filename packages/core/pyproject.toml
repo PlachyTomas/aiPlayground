@@ -2,7 +2,7 @@
 name = "visionsuite-core"
 version = "0.0.0"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["pillow>=10", "datasets>=3", "imageio>=2.34", "imageio-ffmpeg>=0.5"]
 
 [build-system]
 requires = ["hatchling"]

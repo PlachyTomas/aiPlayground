@@ -20,8 +20,14 @@ class Dataset(SQLModel, table=True):
 
 class Image(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    dataset_id: int = Field(foreign_key="dataset.id")
+    dataset_id: int = Field(foreign_key="dataset.id", index=True)
+    image_id: str = Field(index=True)
+    filename: str
+    width: int
+    height: int
+    source: str
     path: str
+    thumb_path: str
 
 
 class Run(SQLModel, table=True):
