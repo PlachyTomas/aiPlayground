@@ -67,3 +67,22 @@ export async function importWebcam(dsId: number, blob: Blob): Promise<ImageInfo>
   const fd = new FormData(); fd.append("file", blob, "frame.png");
   return (await fetch(apiUrl(`/api/datasets/${dsId}/import/webcam`), { method: "POST", body: fd })).json();
 }
+
+export async function labelStudioStatus(): Promise<{ connected: boolean; url: string; detail?: string }> {
+  return (await fetch(apiUrl("/api/labelstudio/status"))).json();
+}
+export async function createLabelingProject(dsId: number, classNames: string[]):
+  Promise<{ ls_project_id: number; ls_url: string }> {
+  return (await fetch(apiUrl(`/api/datasets/${dsId}/labeling/project`), {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ class_names: classNames }),
+  })).json();
+}
+export async function labelingStatus(dsId: number): Promise<{
+  configured: boolean; ls_project_id?: number; total?: number; annotated?: number; ls_url?: string;
+}> {
+  return (await fetch(apiUrl(`/api/datasets/${dsId}/labeling/status`))).json();
+}
+export async function pullAnnotations(dsId: number): Promise<{ job_id: string }> {
+  return (await fetch(apiUrl(`/api/datasets/${dsId}/labeling/pull`), { method: "POST" })).json();
+}
