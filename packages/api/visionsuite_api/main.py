@@ -19,6 +19,15 @@ def create_app(engine=None, manager=None) -> FastAPI:
     app.state.manager = manager or JobManager()
     app.include_router(health.router)
     app.include_router(runs.router)
+
+    from pathlib import Path
+
+    from fastapi.staticfiles import StaticFiles
+
+    dist = Path(__file__).resolve().parents[3] / "web" / "dist"
+    if dist.is_dir():
+        app.mount("/", StaticFiles(directory=str(dist), html=True), name="web")
+
     return app
 
 
