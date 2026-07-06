@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .db import init_db, make_engine
 from .jobs import JobManager
-from .routes import health, jobs, runs
+from .routes import datasets, health, jobs, runs
 
 
 def create_app(engine=None, manager=None) -> FastAPI:
@@ -20,6 +20,7 @@ def create_app(engine=None, manager=None) -> FastAPI:
     app.include_router(health.router)
     app.include_router(runs.router)
     app.include_router(jobs.router)
+    app.include_router(datasets.router)
 
     from pathlib import Path
 
