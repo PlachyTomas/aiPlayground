@@ -16,6 +16,16 @@ class Dataset(SQLModel, table=True):
     name: str
     task: str
     project_id: int | None = Field(default=None, foreign_key="project.id")
+    ls_project_id: int | None = Field(default=None)
+    class_names: str = "[]"
+
+
+class Annotation(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    dataset_id: int = Field(foreign_key="dataset.id", index=True)
+    image_id: str = Field(index=True)
+    coco_json: str
+    n_objects: int
 
 
 class Image(SQLModel, table=True):

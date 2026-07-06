@@ -8,6 +8,7 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "sqlmodel>=0.0.22",
     "python-multipart>=0.0.9",
+    "label-studio-sdk>=2,<3",
 ]
 
 [build-system]
