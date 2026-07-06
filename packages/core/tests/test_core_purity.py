@@ -1,12 +1,16 @@
-import importlib
-import pkgutil
+import subprocess
 import sys
-
-import visionsuite_core
 
 
 def test_core_imports_no_web_framework():
-    for mod in pkgutil.walk_packages(visionsuite_core.__path__, "visionsuite_core."):
-        importlib.import_module(mod.name)
-    forbidden = {"fastapi", "starlette", "uvicorn"}
-    assert forbidden.isdisjoint(sys.modules.keys())
+    # Fresh interpreter: independent of what the rest of the session imported.
+    code = (
+        "import importlib, pkgutil, sys\n"
+        "import visionsuite_core\n"
+        "for mod in pkgutil.walk_packages(visionsuite_core.__path__, 'visionsuite_core.'):\n"
+        "    importlib.import_module(mod.name)\n"
+        "forbidden = {'fastapi', 'starlette', 'uvicorn'}\n"
+        "loaded = sorted(forbidden & sys.modules.keys())\n"
+        "assert not loaded, loaded\n"
+    )
+    subprocess.run([sys.executable, "-c", code], check=True)

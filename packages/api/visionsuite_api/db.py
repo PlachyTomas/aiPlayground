@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from sqlmodel import Field, SQLModel, create_engine
 
 
@@ -33,6 +35,8 @@ class Model(SQLModel, table=True):
 
 
 def make_engine(url: str = "sqlite:///./workspace/db.sqlite"):
+    if url.startswith("sqlite:///") and ":memory:" not in url:
+        Path(url.removeprefix("sqlite:///")).parent.mkdir(parents=True, exist_ok=True)
     return create_engine(url, connect_args={"check_same_thread": False})
 
 
