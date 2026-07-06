@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from sqlalchemy.pool import StaticPool
 from sqlmodel import Field, SQLModel, create_engine
 
 
@@ -35,9 +36,12 @@ class Model(SQLModel, table=True):
 
 
 def make_engine(url: str = "sqlite:///./workspace/db.sqlite"):
+    kwargs = {"connect_args": {"check_same_thread": False}}
     if url.startswith("sqlite:///") and ":memory:" not in url:
         Path(url.removeprefix("sqlite:///")).parent.mkdir(parents=True, exist_ok=True)
-    return create_engine(url, connect_args={"check_same_thread": False})
+    else:
+        kwargs["poolclass"] = StaticPool  # one shared connection so in-memory DB survives across threads
+    return create_engine(url, **kwargs)
 
 
 def init_db(engine) -> None:
