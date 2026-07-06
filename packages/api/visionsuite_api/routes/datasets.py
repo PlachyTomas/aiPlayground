@@ -1,7 +1,7 @@
 import shutil
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlmodel import Session, func, select
@@ -9,7 +9,7 @@ from sqlmodel import Session, func, select
 from visionsuite_core import workspace
 
 from ..db import Dataset, Image
-from ..imports import folder_producer, save_and_record
+from ..imports import folder_producer, hf_producer, save_and_record, save_upload_tempfile, video_producer
 
 router = APIRouter()
 
@@ -118,3 +118,33 @@ async def import_folder(request: Request, ds_id: int, body: FolderImport) -> dic
 async def import_webcam(request: Request, ds_id: int, file: UploadFile) -> dict:
     data = await file.read()
     return save_and_record(request.app.state.engine, ds_id, data, source="webcam")
+
+
+class HFImport(BaseModel):
+    dataset_id: str
+    split: str = "train"
+    config: str | None = None
+    image_column: str | None = None
+    limit: int | None = 200
+
+
+@router.post("/api/datasets/{ds_id}/import/hf")
+async def import_hf(request: Request, ds_id: int, body: HFImport) -> dict:
+    engine = request.app.state.engine
+    job_id = uuid4().hex
+    await request.app.state.manager.submit_stream(
+        job_id, "import",
+        lambda: hf_producer(engine, ds_id, body.dataset_id, body.split, body.config,
+                            body.image_column, body.limit))
+    return {"job_id": job_id}
+
+
+@router.post("/api/datasets/{ds_id}/import/video")
+async def import_video(request: Request, ds_id: int, file: UploadFile, every_n: int = Form(30)) -> dict:
+    data = await file.read()
+    path = save_upload_tempfile(data, suffix=".mp4")
+    engine = request.app.state.engine
+    job_id = uuid4().hex
+    await request.app.state.manager.submit_stream(
+        job_id, "import", lambda: video_producer(engine, ds_id, path, every_n))
+    return {"job_id": job_id}

@@ -1,10 +1,17 @@
+import tempfile
 from pathlib import Path
+from pathlib import Path as _Path
 
 from sqlmodel import Session, select
 
 from visionsuite_core import workspace
 from visionsuite_core.backends import RunEvent, RunStatus
-from visionsuite_core.ingest import iter_folder_images, save_image_bytes
+from visionsuite_core.ingest import (
+    extract_video_frames,
+    iter_folder_images,
+    iter_hf_images,
+    save_image_bytes,
+)
 
 from .db import Image
 
@@ -44,3 +51,33 @@ async def folder_producer(engine, ds_id: int, folder: str):
         save_and_record(engine, ds_id, p.read_bytes(), source="folder")
         yield RunEvent(type="progress", progress=i / total if total else 1.0)
     yield RunEvent(type="status", status=RunStatus.DONE)
+
+
+async def hf_producer(engine, ds_id, dataset_id, split, config, image_column, limit):
+    yield RunEvent(type="status", status=RunStatus.RUNNING)
+    yield RunEvent(type="log", message=f"streaming {dataset_id} [{split}]")
+    n = 0
+    for data in iter_hf_images(dataset_id, split=split, config=config, image_column=image_column):
+        save_and_record(engine, ds_id, data, source="hf")
+        n += 1
+        yield RunEvent(type="progress", progress=(n / limit) if limit else None, message=f"{n} images")
+        if limit and n >= limit:
+            break
+    yield RunEvent(type="status", status=RunStatus.DONE)
+
+
+async def video_producer(engine, ds_id, video_path, every_n):
+    yield RunEvent(type="status", status=RunStatus.RUNNING)
+    n = 0
+    for data in extract_video_frames(_Path(video_path), every_n=every_n):
+        save_and_record(engine, ds_id, data, source="video")
+        n += 1
+        yield RunEvent(type="progress", message=f"{n} frames")
+    yield RunEvent(type="log", message=f"extracted {n} frames")
+    yield RunEvent(type="status", status=RunStatus.DONE)
+
+
+def save_upload_tempfile(data: bytes, suffix: str) -> str:
+    fd, path = tempfile.mkstemp(suffix=suffix)
+    _Path(path).write_bytes(data)
+    return path
