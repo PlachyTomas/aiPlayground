@@ -16,8 +16,8 @@ We are in **brainstorming → spec** (Superpowers flow). Currently at the **user
 - [x] Master spec written + user-approved
 - [x] Git repo initialized (commit 594d22c on `main`)
 - [x] Sub-project 0 implementation plan written
-- [ ] **← EXECUTE Sub-project 0 (current step; branch `feat/subproject-0-foundation`)**
-- [ ] Brainstorm Sub-project 1 (data pipeline)
+- [x] Sub-project 0 BUILT on `feat/subproject-0-foundation` (10 tasks, TDD; 24 backend + 3 frontend tests green; whole-branch review passed + fixes applied)
+- [ ] **← Finish Sub-project 0 branch (merge/PR), then brainstorm Sub-project 1 (data pipeline)**
 
 ## Key documents
 - **Design spec:** `docs/superpowers/specs/2026-07-06-visionsuite-design.md` (architecture, scope, validated constraints, decomposition, Sub-project 0 detail).
@@ -32,5 +32,12 @@ Vision-only v1 = **object detection + image classification**, end-to-end. Single
 - `transformers>=4.54` (for `report_to='trackio'`), `label-studio-sdk>=2,<3`, `trackio==0.29.0`, `optimum[onnxruntime]`.
 - Classify timm by `library_name` first; reject `deform_conv2d` models; write our own LS-JSON→COCO converter (coords are %).
 
+## Deferred from Sub-project 0 review (address in later sub-projects)
+- **Cancel wiring** — `RunStatus.CANCELLED` exists but no cancel endpoint/UI yet (wire when training runs get real, SP3).
+- **Persist `run.status` to the DB row** — currently the DB `Run.status` stays "pending"; live status is in-memory only (needed for runs surviving restart, SP3).
+- **SPA deep-link fallback** — FastAPI static serving 404s on hard-refresh of client routes (e.g. `/datasets`); add a catch-all → `index.html` when polishing prod serving.
+- **Lint** — no `ruff` configured; add a tooling pass in SP1.
+- Module-level `app = create_app()` has import-time DB side effects (intentional for `uvicorn ...:app`; revisit if it bites tests).
+
 ## Next action
-User approves/edits the spec → invoke `writing-plans` for the Sub-project 0 plan. Build #0 solo (integrative wiring; don't fan out). Not a git repo yet — offer `git init` before first commit.
+Finish the `feat/subproject-0-foundation` branch (merge to `main` or open a PR — single-user, local, no remote yet → fast-forward merge to `main` is fine). Then **brainstorm Sub-project 1 (data pipeline & ingestion)** via the Superpowers flow (brainstorming → writing-plans → subagent-driven execution). Interactive browser smoke of the dashboard still worth doing once on the M5: `./scripts/dev.sh` → click "Start dummy run".
