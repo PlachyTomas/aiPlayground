@@ -17,8 +17,9 @@ We are in **brainstorming → spec** (Superpowers flow). Currently at the **user
 - [x] Git repo initialized (commit 594d22c on `main`)
 - [x] Sub-project 0 implementation plan written
 - [x] Sub-project 0 BUILT + merged to `main` (10 tasks, TDD; 24 backend + 3 frontend tests green; whole-branch review passed + fixes applied)
-- [x] Sub-project 1 (data pipeline) BUILT + merged to `main` (10 tasks TDD; 40 backend + 7 frontend tests green; whole-branch review passed + 2 leak fixes)
-- [ ] **← Sub-project 2 (Label Studio annotation) — next**
+- [x] Sub-project 1 (data pipeline) BUILT + merged to `main` (10 tasks TDD; whole-branch review passed + 2 leak fixes)
+- [x] Sub-project 2 (Label Studio annotation) BUILT + merged to `main` (8 tasks TDD; 52 backend + 8 frontend tests green; review passed + 3 fixes: threadpool/bounded-poll/purity)
+- [ ] **← Sub-project 3 (training engine) — next; this is where the ML stack finally installs**
 
 ## Key documents
 - **Design spec:** `docs/superpowers/specs/2026-07-06-visionsuite-design.md` (architecture, scope, validated constraints, decomposition, Sub-project 0 detail).
@@ -46,5 +47,11 @@ Vision-only v1 = **object detection + image classification**, end-to-end. Single
 - **Import producers abort on one bad item** — a single undecodable image/frame fails the whole job; consider skip-and-log for robustness.
 - `delete_image` double DB lookup; `ingest.py` mid-file imports; `Datasets.tsx` exhaustive-deps warning; `save_image_bytes` labels unknown formats `.png` (unreachable in SP1). All cosmetic.
 
+## Deferred from Sub-project 2 review (address later)
+- Per-class annotation counts not surfaced (pull logs only a total; UI shows none).
+- Pull's delete-then-insert of `Annotation` rows is non-atomic (failure mid-way loses labels).
+- `LabelStudioGateway.export_json`/`project_stats` shapes are UNVERIFIED against a live LS — adjust in the gateway when first run on the M5 (the one place SDK reality lands).
+- Converter rotation/classification tests are thin; create-project lacks idempotency/empty-class validation; a cancelled pull job can stay RUNNING (CancelledError bypasses JobManager's `except Exception`).
+
 ## Next action
-**Sub-project 2 — Annotation (Label Studio).** Run LS as a local process; FastAPI talks to it via the rewritten SDK (`from label_studio_sdk import LabelStudio`, pin `>=2,<3`); push a dataset's images via Local Storage, pull annotations, convert LS JSON → COCO ourselves (coords are %, `original_width/height` at result level, guard rotation). See the research brief §"#2 Label Studio" for the verified specifics. Follow the same spec → plan → subagent-driven-Opus flow. Smoke the app once on the M5: `./scripts/dev.sh` → Datasets page → import a folder.
+**Sub-project 3 — Training engine.** This is where `torch>=2.11` + `transformers>=4.54` + `trackio` finally install (behind the swappable `TrainingBackend` that SP0 stubbed). Wire real MPS training for the curated shortlist (classification first — ViT/timm; then detection — RT-DETRv2/D-FINE with `PYTORCH_ENABLE_MPS_FALLBACK=1` + bf16, torch.compile OFF), the paste-HF-model resolve→classify→load + compatibility verdict, `report_to='trackio'` metrics into the dashboard, and the detection Trainer gotchas (`remove_unused_columns=False`, `eval_do_concat_batches=False`, per-image `labels` dicts). See research brief §"Curated model shortlist" + §"#3". Same spec → plan → subagent-driven-Opus flow. Reminder: the M5 is the real test target — smoke a small classification run on-device early. Smoke the app anytime: `./scripts/dev.sh`.
