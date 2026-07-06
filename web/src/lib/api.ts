@@ -63,3 +63,7 @@ export async function importVideo(dsId: number, file: File, everyN = 30): Promis
   const fd = new FormData(); fd.append("file", file); fd.append("every_n", String(everyN));
   return (await fetch(apiUrl(`/api/datasets/${dsId}/import/video`), { method: "POST", body: fd })).json();
 }
+export async function importWebcam(dsId: number, blob: Blob): Promise<ImageInfo> {
+  const fd = new FormData(); fd.append("file", blob, "frame.png");
+  return (await fetch(apiUrl(`/api/datasets/${dsId}/import/webcam`), { method: "POST", body: fd })).json();
+}

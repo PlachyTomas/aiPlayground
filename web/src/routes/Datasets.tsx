@@ -3,6 +3,7 @@ import { apiUrl, createDataset, deleteDataset, importFolder, importHf, importVid
   listDatasets, listImages,
   type DatasetInfo, type ImageInfo } from "../lib/api";
 import { useJobStream } from "../lib/useJobStream";
+import WebcamCapture from "./WebcamCapture";
 
 export default function Datasets() {
   const [datasets, setDatasets] = useState<DatasetInfo[]>([]);
@@ -81,6 +82,11 @@ export default function Datasets() {
               <input type="file" accept="video/*"
                      onChange={(e) => onImportVideo(e.target.files?.[0])} />
             </label>
+          </div>
+          <div>
+            <h3>Webcam</h3>
+            <WebcamCapture dsId={selected}
+              onCaptured={() => listImages(selected).then((r) => setImages(r.images))} />
           </div>
           <p>Status: {job.status}</p>
           <progress value={job.progress} max={1} />
