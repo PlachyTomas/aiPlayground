@@ -1,6 +1,7 @@
 import shutil
+from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlmodel import Session, func, select
@@ -8,6 +9,7 @@ from sqlmodel import Session, func, select
 from visionsuite_core import workspace
 
 from ..db import Dataset, Image
+from ..imports import folder_producer, save_and_record
 
 router = APIRouter()
 
@@ -94,3 +96,25 @@ def delete_image(request: Request, ds_id: int, image_id: str) -> dict:
         if db_row:
             s.delete(db_row); s.commit()
     return {"deleted": True}
+
+
+class FolderImport(BaseModel):
+    path: str
+
+
+@router.post("/api/datasets/{ds_id}/import/folder")
+async def import_folder(request: Request, ds_id: int, body: FolderImport) -> dict:
+    from pathlib import Path as _P
+    if not _P(body.path).is_dir():
+        raise HTTPException(400, f"not a folder: {body.path}")
+    engine = request.app.state.engine
+    job_id = uuid4().hex
+    await request.app.state.manager.submit_stream(
+        job_id, "import", lambda: folder_producer(engine, ds_id, body.path))
+    return {"job_id": job_id}
+
+
+@router.post("/api/datasets/{ds_id}/import/webcam")
+async def import_webcam(request: Request, ds_id: int, file: UploadFile) -> dict:
+    data = await file.read()
+    return save_and_record(request.app.state.engine, ds_id, data, source="webcam")
