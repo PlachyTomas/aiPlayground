@@ -47,3 +47,19 @@ export async function listImages(dsId: number, offset = 0, limit = 60):
   Promise<{ total: number; images: ImageInfo[] }> {
   return (await fetch(apiUrl(`/api/datasets/${dsId}/images?offset=${offset}&limit=${limit}`))).json();
 }
+
+export async function importFolder(dsId: number, path: string): Promise<{ job_id: string }> {
+  return (await fetch(apiUrl(`/api/datasets/${dsId}/import/folder`), {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path }),
+  })).json();
+}
+export async function importHf(dsId: number, dataset_id: string, limit = 200): Promise<{ job_id: string }> {
+  return (await fetch(apiUrl(`/api/datasets/${dsId}/import/hf`), {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dataset_id, limit }),
+  })).json();
+}
+export async function importVideo(dsId: number, file: File, everyN = 30): Promise<{ job_id: string }> {
+  const fd = new FormData(); fd.append("file", file); fd.append("every_n", String(everyN));
+  return (await fetch(apiUrl(`/api/datasets/${dsId}/import/video`), { method: "POST", body: fd })).json();
+}
