@@ -17,8 +17,8 @@ We are in **brainstorming → spec** (Superpowers flow). Currently at the **user
 - [x] Git repo initialized (commit 594d22c on `main`)
 - [x] Sub-project 0 implementation plan written
 - [x] Sub-project 0 BUILT + merged to `main` (10 tasks, TDD; 24 backend + 3 frontend tests green; whole-branch review passed + fixes applied)
-- [x] Sub-project 1 (data pipeline) spec + plan written (authored by Claude at user delegation — no interview)
-- [ ] **← EXECUTE Sub-project 1 on `feat/subproject-1-data` (10 tasks, subagent-driven Opus)**
+- [x] Sub-project 1 (data pipeline) BUILT + merged to `main` (10 tasks TDD; 40 backend + 7 frontend tests green; whole-branch review passed + 2 leak fixes)
+- [ ] **← Sub-project 2 (Label Studio annotation) — next**
 
 ## Key documents
 - **Design spec:** `docs/superpowers/specs/2026-07-06-visionsuite-design.md` (architecture, scope, validated constraints, decomposition, Sub-project 0 detail).
@@ -41,5 +41,10 @@ Vision-only v1 = **object detection + image classification**, end-to-end. Single
 - **Lint** — no `ruff` configured; add a tooling pass in SP1.
 - Module-level `app = create_app()` has import-time DB side effects (intentional for `uvicorn ...:app`; revisit if it bites tests).
 
+## Deferred from Sub-project 1 review (address later)
+- **No dataset-existence 404** on import/list endpoints → importing into a bogus id makes orphan files/rows (FK unenforced). Add a guard.
+- **Import producers abort on one bad item** — a single undecodable image/frame fails the whole job; consider skip-and-log for robustness.
+- `delete_image` double DB lookup; `ingest.py` mid-file imports; `Datasets.tsx` exhaustive-deps warning; `save_image_bytes` labels unknown formats `.png` (unreachable in SP1). All cosmetic.
+
 ## Next action
-Finish the `feat/subproject-0-foundation` branch (merge to `main` or open a PR — single-user, local, no remote yet → fast-forward merge to `main` is fine). Then **brainstorm Sub-project 1 (data pipeline & ingestion)** via the Superpowers flow (brainstorming → writing-plans → subagent-driven execution). Interactive browser smoke of the dashboard still worth doing once on the M5: `./scripts/dev.sh` → click "Start dummy run".
+**Sub-project 2 — Annotation (Label Studio).** Run LS as a local process; FastAPI talks to it via the rewritten SDK (`from label_studio_sdk import LabelStudio`, pin `>=2,<3`); push a dataset's images via Local Storage, pull annotations, convert LS JSON → COCO ourselves (coords are %, `original_width/height` at result level, guard rotation). See the research brief §"#2 Label Studio" for the verified specifics. Follow the same spec → plan → subagent-driven-Opus flow. Smoke the app once on the M5: `./scripts/dev.sh` → Datasets page → import a folder.
