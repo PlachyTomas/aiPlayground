@@ -1,57 +1,54 @@
 # VisionSuite — Progress / Resumption Note
 
-_Terse cross-session status. Last updated: 2026-07-06._
+_Committed resume anchor (self-sufficient; does not rely on any out-of-repo memory). Last updated: 2026-07-06._
 
-## What this is
-A **local, single-user** suite to train Hugging Face **vision** models on a **MacBook Air M5 (MPS, 24GB, fanless)**. Loop: ingest → label → train → eval → export → in-app still-image test. Goal: **produce real fine-tuned models**. Stack: **React+Vite + FastAPI + pure-Python core**, **Label Studio** for annotation, **Trackio** for tracking.
+## ▶ START HERE (new session)
+1. Read this file top-to-bottom, then `git log --oneline -20`.
+2. **Resolve the HARDWARE question below before designing Sub-project 3** — it changes SP3's whole design.
+3. Working style so far: the user **delegates sub-project design (no interview)** — Claude authors the spec + plan and builds via **subagent-driven-development on Opus** (one implementer subagent per task, Claude reviews each diff in-loop, one whole-branch review at the end, then fast-forward merge to `main`). Keep agent count lean; keep the main model on Opus.
+4. Everything needed to resume is committed on `main`. The per-task SDD ledger under `.superpowers/sdd/` is gitignored scratch — this file is the durable record.
+5. Smoke the app anytime: `uv sync --all-packages && (cd web && npm install) && ./scripts/dev.sh`.
 
-## Where we are (process)
-We are in **brainstorming → spec** (Superpowers flow). Currently at the **user-reviews-spec gate**.
+## ⚠ HARDWARE — must confirm before Sub-project 3
+The entire design (research brief, SP3 plan direction) assumes the training machine is a **MacBook Air M5 (Apple Silicon / MPS / 24 GB unified)**. The user has now said they are **running on a Lenovo notebook (weaker)**. This is unresolved and it is load-bearing for SP3:
+- If the **Lenovo is the real target** (x86; NVIDIA CUDA GPU, or none): the MPS-specific pins/decisions **do not apply** — no `PYTORCH_ENABLE_MPS_FALLBACK`, `grid_sample`-fallback reasoning, or bf16-on-MPS; instead detect device = CUDA (if an NVIDIA GPU is present) or CPU. A weak/no-GPU Lenovo likely can't train detection locally at reasonable speed → the **cloud fallback (HF Jobs)** the user declined in the M5 interview may need revisiting for detection.
+- If the **M5 is still the target** and the Lenovo is just the current dev box: SP3 proceeds as the research brief describes (MPS), and the Lenovo is only for building/testing the non-ML plumbing (which is device-agnostic and already green here on Linux).
+- **The `TrainingBackend` abstraction survives either way** (SP0 built it to be swappable); only the concrete local backend's device handling + the feasible-model shortlist change.
+- **Action:** ask the user which machine SP3 must run on (and, if Lenovo, its GPU) before writing the SP3 spec. Re-scope device handling + model shortlist accordingly.
 
-- [x] Interview (scope, hardware, goals)
-- [x] Architecture approved (4 components + workspace + Label Studio)
-- [x] Decomposition approved (5 sub-projects)
-- [x] Sub-project 0 (foundation) scope approved
-- [x] De-risking research sweep done + persisted
-- [x] Master spec written + user-approved
-- [x] Git repo initialized (commit 594d22c on `main`)
-- [x] Sub-project 0 implementation plan written
-- [x] Sub-project 0 BUILT + merged to `main` (10 tasks, TDD; 24 backend + 3 frontend tests green; whole-branch review passed + fixes applied)
-- [x] Sub-project 1 (data pipeline) BUILT + merged to `main` (10 tasks TDD; whole-branch review passed + 2 leak fixes)
-- [x] Sub-project 2 (Label Studio annotation) BUILT + merged to `main` (8 tasks TDD; 52 backend + 8 frontend tests green; review passed + 3 fixes: threadpool/bounded-poll/purity)
-- [ ] **← Sub-project 3 (training engine) — next; this is where the ML stack finally installs**
+## Status (process)
+Sub-projects 0–2 are BUILT, reviewed, and merged to `main`. SP3 is next (blocked on the hardware question above).
 
-## Key documents
-- **Design spec:** `docs/superpowers/specs/2026-07-06-visionsuite-design.md` (architecture, scope, validated constraints, decomposition, Sub-project 0 detail).
-- **Research brief:** `docs/superpowers/research/2026-07-06-derisk-brief.md` (the expensive 361k-token artifact — MPS/Label Studio/Trackio/model-import/export findings, verified repo IDs, version pins).
-- **Sub-project 0 plan:** `docs/superpowers/plans/2026-07-06-subproject-0-foundation.md` (10 TDD tasks, walking skeleton; ML deps deliberately NOT installed until Sub-project 3).
-- **Sub-project 1 spec + plan:** `docs/superpowers/specs/2026-07-06-subproject-1-data-design.md` + `docs/superpowers/plans/2026-07-06-subproject-1-data.md` (10 TDD tasks: core ingest, generalized jobs, dataset CRUD, 4 import sources, Datasets UI; adds pillow/datasets/imageio/python-multipart — NOT the ML stack).
+- [x] Interview, architecture, 5-way decomposition, de-risking research sweep (all persisted)
+- [x] Git repo (root commit 594d22c on `main`)
+- [x] **SP0 — Foundation / walking skeleton** — merged (10 TDD tasks; uv workspace, FastAPI + generic JobManager + `/api/jobs/{id}/events` WS, SQLite, React dashboard)
+- [x] **SP1 — Data pipeline & ingestion** — merged (10 TDD tasks; core `ingest`, dataset CRUD + serving, 4 import sources, Datasets page)
+- [x] **SP2 — Annotation (Label Studio)** — merged (8 TDD tasks; pure LS→COCO converter, `LabelStudioGateway`, project/status/pull endpoints, Labeling page, launcher)
+- [ ] **← SP3 — Training engine** (installs the ML stack; MPS **or** CUDA/CPU per hardware answer)
+- [ ] SP4 — Eval, export & in-app test
+
+Current test state on this Linux box: **52 backend + 8 frontend tests green; `npm run build` OK.** No ML deps installed yet (deferred to SP3).
+
+## Key documents (all committed on `main`)
+- **Master design spec:** `docs/superpowers/specs/2026-07-06-visionsuite-design.md`
+- **Research brief:** `docs/superpowers/research/2026-07-06-derisk-brief.md` (MPS/Label Studio/Trackio/model-import/export findings, verified repo IDs, version pins — **note: the MPS parts assume Apple Silicon**)
+- **SP0 plan:** `docs/superpowers/plans/2026-07-06-subproject-0-foundation.md`
+- **SP1 spec + plan:** `docs/superpowers/specs/2026-07-06-subproject-1-data-design.md` · `docs/superpowers/plans/2026-07-06-subproject-1-data.md`
+- **SP2 spec + plan:** `docs/superpowers/specs/2026-07-06-subproject-2-annotation-design.md` · `docs/superpowers/plans/2026-07-06-subproject-2-annotation.md`
 
 ## Locked decisions
-Vision-only v1 = **object detection + image classification**, end-to-end. Single-user, no auth. On-device MPS training behind a swappable `TrainingBackend` (cloud later, not v1). Annotation = Label Studio (local process, SDK). Tracking = Trackio (local). Model registry = curated MPS-safe shortlist **+ paste-any-HF-model** with a compatibility verdict. Export = HF native + ONNX (classification clean, detection best-effort); Core ML deferred. In-app inference = still images only (no live camera in v1).
+Vision-only v1 = **object detection + image classification**, end-to-end. Single-user, no auth. Local training behind a **swappable `TrainingBackend`** (cloud later). Annotation = Label Studio (local process, SDK). Tracking = Trackio (local). Model registry = curated shortlist **+ paste-any-HF-model** with a compatibility verdict. Export = HF native + ONNX (classification clean, detection best-effort); Core ML deferred. In-app inference = still images only. **Caveat:** "on-device MPS training" was decided assuming the M5 — revisit per the hardware question.
 
-## Non-negotiable technical pins (from research)
-- `torch>=2.11`, `PYTORCH_ENABLE_MPS_FALLBACK=1` in training env, **bf16** (not fp16), `torch.compile` OFF.
-- `transformers>=4.54` (for `report_to='trackio'`), `label-studio-sdk>=2,<3`, `trackio==0.29.0`, `optimum[onnxruntime]`.
-- Classify timm by `library_name` first; reject `deform_conv2d` models; write our own LS-JSON→COCO converter (coords are %).
+## Technical pins from research (⚠ MPS-specific — conditional on Apple-Silicon target)
+- `torch>=2.11`, `PYTORCH_ENABLE_MPS_FALLBACK=1`, **bf16** (not fp16), `torch.compile` OFF — **all MPS-only**; ignore/replace if the target is CUDA/CPU.
+- `transformers>=4.54` (for `report_to='trackio'`), `trackio==0.29.0`, `optimum[onnxruntime]` — device-agnostic, still apply.
+- Already installed + applying: `label-studio-sdk>=2,<3`; classify timm by `library_name` first; reject `deform_conv2d` models; our own LS-JSON→COCO converter (coords are %).
 
-## Deferred from Sub-project 0 review (address in later sub-projects)
-- **Cancel wiring** — `RunStatus.CANCELLED` exists but no cancel endpoint/UI yet (wire when training runs get real, SP3).
-- **Persist `run.status` to the DB row** — currently the DB `Run.status` stays "pending"; live status is in-memory only (needed for runs surviving restart, SP3).
-- **SPA deep-link fallback** — FastAPI static serving 404s on hard-refresh of client routes (e.g. `/datasets`); add a catch-all → `index.html` when polishing prod serving.
-- **Lint** — no `ruff` configured; add a tooling pass in SP1.
-- Module-level `app = create_app()` has import-time DB side effects (intentional for `uvicorn ...:app`; revisit if it bites tests).
-
-## Deferred from Sub-project 1 review (address later)
-- **No dataset-existence 404** on import/list endpoints → importing into a bogus id makes orphan files/rows (FK unenforced). Add a guard.
-- **Import producers abort on one bad item** — a single undecodable image/frame fails the whole job; consider skip-and-log for robustness.
-- `delete_image` double DB lookup; `ingest.py` mid-file imports; `Datasets.tsx` exhaustive-deps warning; `save_image_bytes` labels unknown formats `.png` (unreachable in SP1). All cosmetic.
-
-## Deferred from Sub-project 2 review (address later)
-- Per-class annotation counts not surfaced (pull logs only a total; UI shows none).
-- Pull's delete-then-insert of `Annotation` rows is non-atomic (failure mid-way loses labels).
-- `LabelStudioGateway.export_json`/`project_stats` shapes are UNVERIFIED against a live LS — adjust in the gateway when first run on the M5 (the one place SDK reality lands).
-- Converter rotation/classification tests are thin; create-project lacks idempotency/empty-class validation; a cancelled pull job can stay RUNNING (CancelledError bypasses JobManager's `except Exception`).
+## Deferred review findings (address in later sub-projects)
+**SP0:** cancel wiring unbuilt (`RunStatus.CANCELLED` unused); DB `Run.status` never persisted (in-memory only); SPA deep-link 404 on hard-refresh; no `ruff` lint; module-level `app = create_app()` has import-time DB side effects.
+**SP1:** import/list endpoints don't 404 on a bogus dataset id (orphan files/rows); import producers abort on one bad item (no skip-and-log); `delete_image` double lookup; `ingest.py` mid-file imports; `Datasets.tsx` exhaustive-deps warning; `save_image_bytes` labels unknown formats `.png`.
+**SP2:** per-class annotation counts not surfaced; pull's delete-then-insert is non-atomic; **`LabelStudioGateway.export_json`/`project_stats` SDK shapes UNVERIFIED against a live LS** — adjust in the gateway on first real run; thin converter tests; create-project lacks idempotency/empty-class validation; a cancelled pull job can stay RUNNING (CancelledError bypasses `JobManager`'s `except Exception`).
 
 ## Next action
-**Sub-project 3 — Training engine.** This is where `torch>=2.11` + `transformers>=4.54` + `trackio` finally install (behind the swappable `TrainingBackend` that SP0 stubbed). Wire real MPS training for the curated shortlist (classification first — ViT/timm; then detection — RT-DETRv2/D-FINE with `PYTORCH_ENABLE_MPS_FALLBACK=1` + bf16, torch.compile OFF), the paste-HF-model resolve→classify→load + compatibility verdict, `report_to='trackio'` metrics into the dashboard, and the detection Trainer gotchas (`remove_unused_columns=False`, `eval_do_concat_batches=False`, per-image `labels` dicts). See research brief §"Curated model shortlist" + §"#3". Same spec → plan → subagent-driven-Opus flow. Reminder: the M5 is the real test target — smoke a small classification run on-device early. Smoke the app anytime: `./scripts/dev.sh`.
+1. **Resolve the HARDWARE question** (M5 vs Lenovo + its GPU) — ask the user.
+2. Then design **SP3 — Training engine**: real training behind the `TrainingBackend`, device handling per the answer, classification first (ViT/timm) then detection (RT-DETRv2/D-FINE), paste-HF-model resolve→classify→load + compat verdict, `report_to='trackio'` metrics into the dashboard, detection Trainer gotchas (`remove_unused_columns=False`, `eval_do_concat_batches=False`, per-image `labels` dicts). Same spec → plan → subagent-driven-Opus flow. Smoke a small **real** training run on the actual target machine early.
